@@ -33,6 +33,21 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import java.util.*;
 
 public class BookSellerAgent extends Agent {
+    // Duration of rounds IN MILISECONDS
+    private final int roundDuration = 10000;
+    
+    // Type of the agent
+    private final String agentType = "book-selling";
+    
+    // Type of the target agents
+    private final String targetAgentType = "book-buying";
+    
+    // Type of the offer message
+    private final String offerMessageType = "book-offer";
+    
+    // Type of the trade message
+    private final String tradeMessageType = "book-trade";
+    
     // The catalogue of books for sale (maps the title of a book to its object)
     private List<Auction> catalogue;
     
@@ -61,21 +76,20 @@ public class BookSellerAgent extends Agent {
         // Set the CFP template and Service
         templateCFP = new DFAgentDescription();
         sdCFP = new ServiceDescription();
-        sdCFP.setType("book-buying");
+        sdCFP.setType(targetAgentType);
         templateCFP.addServices(sdCFP);
 
         // Register the book-selling service in the yellow pages
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
-        sd.setType("book-selling");
+        sd.setType(agentType);
         sd.setName("JADE-book-seller");
         dfd.addServices(sd);
         try {
             DFService.register(this, dfd);
         } catch (FIPAException fe) {
             fe.printStackTrace();
-            System.exit(1);
         }
 
         //***********************************   DURING THE ROUND BEHAVIOUR  ***********************************
@@ -85,7 +99,7 @@ public class BookSellerAgent extends Agent {
 
         //***********************************   EACH 10 SECONDS BEHAVIOUR  ***********************************
         // Add a TickerBehaviour that schedules a request to seller agents every 10 seconds
-        addBehaviour(new TickerBehaviour(this, 10000) {
+        addBehaviour(new TickerBehaviour(this, roundDuration) {
             @Override
             protected void onTick() {
                 //We use an iterator so we can remove the current auction from the catalogue
@@ -97,58 +111,57 @@ public class BookSellerAgent extends Agent {
                     auction = auctionIt.next();
                     
                     //***********************************   END OF ROUND BEHAVIOUR   ***********************************
-                    //If there was a round before the current one we need to check the potential buying proposals
-                    if (auction.getCFP() != null) {
-                        //We clear this round's buyers and it gets saved in lastRoundBuyers array
-                        auction.setBuyers(new ArrayList<>());
+                    //We clear this round's buyers and it gets saved in lastRoundBuyers array
+                    auction.setBuyers(new ArrayList<>());
 
-                        // Prepare the template to get proposals
-                        MessageTemplate mt = MessageTemplate.and(
-                                MessageTemplate.MatchConversationId("book-offer"),
-                                MessageTemplate.MatchInReplyTo(auction.getCFP().getReplyWith()));
-                        // Receive all proposals/refusals from buyer agents
-                        ACLMessage reply = myAgent.receive(mt);
-                        
-                        // if there is no proposals the Auction ends and the first buyer from the previous round wins 
-                        if (reply == null) {
-                            // If lastRoundBuyers is empty, and there were no replies, we reset the auction
-                            if(auction.getLastRoundBuyers().isEmpty()){
-                                auction.resetAuction();
-                                continue;
-                            }
-                            // We remove the auction from the list
-                            auctionIt.remove();
-                            // Add the behaviour starting the trade 
-                            addBehaviour(new TradeController(auction, "last round"));
+                    // Prepare the template to get proposals
+                    MessageTemplate mt = MessageTemplate.and(
+                            MessageTemplate.MatchConversationId(offerMessageType),
+                            MessageTemplate.MatchInReplyTo(auction.getCFP().getReplyWith()));
+                    // Receive all proposals/refusals from buyer agents
+                    ACLMessage reply = myAgent.receive(mt);
+
+                    // if there is no proposals the Auction ends and the first buyer from the previous round wins 
+                    if (reply == null) {
+                        // If it's the first round, it means no one saw or wanted our offer, we dont go to the next round
+                        if (auction.getRound() == 0)
+                            continue;
+                        // If lastRoundBuyers is empty, and there were no replies, we reset the auction
+                        if(auction.getLastRoundBuyers().isEmpty()){
+                            auction.resetAuction();
                             continue;
                         }
-                        
-                        //We save the proposals
-                        while (reply != null) {
-                            // Reply received, we add the sender to the buyers list
-                            if (reply.getPerformative() == ACLMessage.ACCEPT_PROPOSAL && !auction.getBuyers().contains(reply.getSender()))
-                                auction.getBuyers().add(reply.getSender());
-                            reply = myAgent.receive(mt);
-                        }
-                        
-                        //If there is only one porposal the buyer wins the auction
-                        if (auction.getBuyers().size() == 1) {
-                            // We remove the auction from the list
-                            auctionIt.remove();
-                            // Add the behaviour starting the trade 
-                            addBehaviour(new TradeController(auction, "this round"));
-                            continue;
-                        }
+                        // If lastRoundBuyers is not empty we initiate a trade offer
+                        // We remove the auction from the list
+                        auctionIt.remove();
+                        // Add the behaviour starting the trade 
+                        addBehaviour(new TradeController(auction, "last round"));
+                        continue;
                     }
+
+                    //We save the proposals
+                    while (reply != null) {
+                        // Reply received, we add the sender to the buyers list
+                        if (reply.getPerformative() == ACLMessage.ACCEPT_PROPOSAL && !auction.getBuyers().contains(reply.getSender()))
+                            auction.getBuyers().add(reply.getSender());
+                        reply = myAgent.receive(mt);
+                    }
+
+                    //If there is only one porposal the buyer wins the auction
+                    if (auction.getBuyers().size() == 1) {
+                        // We remove the auction from the list
+                        auctionIt.remove();
+                        // Add the behaviour starting the trade 
+                        addBehaviour(new TradeController(auction, "this round"));
+                        continue;
+                    }
+                    
 
                     //***********************************   NEW ROUND BEHAVIOUR   ***********************************
                     // if there is more than one buyer ot CFP is null we create a new CFP
                     // Increment round and set new CFP
                     auction.incrementRound();
-                    auction.setCFP(new ACLMessage(ACLMessage.CFP));
-                    auction.getCFP().setContent(auction.getTitle() + "-" + auction.getCurrentPrice());
-                    auction.getCFP().setConversationId("book-offer");
-                    auction.getCFP().setReplyWith("cfp-" + auction.getId() + "-" + auction.getRound()); // Unique value
+                    auction.resetCFP();
                     System.out.println("New auction round for " + auction.getTitle() + " : " + auction.getId() + " for " + auction.getCurrentPrice() + "€");
 
                     // Update the list of CFP receivers
@@ -216,7 +229,7 @@ public class BookSellerAgent extends Agent {
             
             // Set the purchase order
             ACLMessage order = new ACLMessage(ACLMessage.PROPOSE);
-            order.setConversationId("book-trade");
+            order.setConversationId(tradeMessageType);
             AID seller = (option.equals("last round")) ? auction.getLastRoundBuyers().get(0) : auction.getBuyers().get(0);
             order.addReceiver(seller);
             String content = (option.equals("last round")) ? auction.getTitle() + "-" + auction.getLastRoundPrice(): auction.getTitle() + "-" + auction.getCurrentPrice();
@@ -228,7 +241,7 @@ public class BookSellerAgent extends Agent {
             
             // Prepare the template to get the purchase order reply
             mt = MessageTemplate.and(
-                    MessageTemplate.MatchConversationId("book-trade"),
+                    MessageTemplate.MatchConversationId(tradeMessageType),
                     MessageTemplate.MatchInReplyTo(order.getReplyWith()));
             
             // Receive the purchase order reply
@@ -268,9 +281,10 @@ public class BookSellerAgent extends Agent {
      *
      * @param newAuction
      */
-    public void updateCatalogue(Auction newAuction) {
+    public void addToCataloge(Auction newAuction) {
         addBehaviour(new OneShotBehaviour() {
-            public void action() {
+            public void action() {                
+                // Add the newAuction to the cataloge
                 catalogue.add(newAuction);
                 System.out.println(newAuction.getTitle() + " inserted with catalogue id " + newAuction.getId() + ". Price = " + newAuction.getOriginalPrice());
             }
@@ -290,25 +304,28 @@ public class BookSellerAgent extends Agent {
             //We use an iterator so we can removing the current auction from the catalogue doesnt break the loop
             Iterator<Auction> auctionIt = catalogue.iterator();
             Auction auction;
+            try {
+                // Get the available CFP receivers
+                DFAgentDescription[] result = DFService.search(myAgent, templateCFP);
             
-            //For each of the auctions
-            while (auctionIt.hasNext()) {
-                auction = auctionIt.next();
+                //For each of the auctions
+                while (auctionIt.hasNext()) {
+                    auction = auctionIt.next();
                     
-                // Update the list of CFP receivers
-                try {
-                    //Get them all
-                    DFAgentDescription[] result = DFService.search(myAgent, templateCFP);
+                    // We clear the old receivers
+                    auction.getCFP().clearAllReceiver();
+                    
+                    //We add the new receivers to the auctions CDP message
                     System.out.println("Found the following book-buying agents:");
                     for (int i = 0; i < result.length; ++i) {
-                        auction.getCFP().clearAllReceiver();
                         auction.getCFP().addReceiver(result[i].getName());
                         System.out.println(" "+auction.getBuyers().get(i).getName());
                     }
+                    // We send the message to the receivers
                     myAgent.send(auction.getCFP());
-                } catch (FIPAException fe) {
-                    fe.printStackTrace();
                 }
+            } catch (FIPAException fe) {
+                fe.printStackTrace();
             }
         }
     }  // End of inner class AnnounceAuctionsServer

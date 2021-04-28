@@ -25,12 +25,15 @@ public class Auction {
     public Auction(String title, int price, int increment) {
         this.id = System.currentTimeMillis();
         this.title = title;
-        this.round = -1;
+        this.round = 0;
         this.price = price;
         this.increment = increment;
         this.lastRoundBuyers = null;
         this.buyers = new ArrayList<>();
-        this.cfp = null;
+        this.cfp = new ACLMessage(ACLMessage.CFP);
+        this.cfp.setContent(this.title + "-" + price);
+        this.cfp.setConversationId("book-offer");
+        this.cfp.setReplyWith("cfp-" + this.id + "-" + this.round);
     }
 
     public String getTitle() {
@@ -94,11 +97,19 @@ public class Auction {
         return this.round;
     }
     
+    public Auction resetCFP(){
+        this.cfp = new ACLMessage(ACLMessage.CFP);
+        this.cfp.setContent(this.title + "-" + this.getCurrentPrice());
+        this.cfp.setConversationId("book-offer");
+        this.cfp.setReplyWith("cfp-" + this.id + "-" + this.round); // Unique value
+        return this;
+    }
+    
     public Auction resetAuction(){
-        this.round = -1;
+        this.round = 0;
         this.lastRoundBuyers = null;
         this.buyers = new ArrayList<>();
-        this.cfp = null;
+        this.resetCFP();
         return this;
     }
     

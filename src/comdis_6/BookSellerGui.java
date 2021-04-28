@@ -61,7 +61,7 @@ class BookSellerGui extends JFrame {
                     String price = priceField.getText().trim();
                     String increment = incrementField.getText().trim();
                     //New Auction id will be the System.currentTimeMillis()
-                    myAgent.updateCatalogue(new Auction(title, Integer.parseInt(price), Integer.parseInt(increment)));
+                    myAgent.addToCataloge(new Auction(title, Integer.parseInt(price), Integer.parseInt(increment)));
                     titleField.setText("");
                     priceField.setText("");
                     incrementField.setText("");
