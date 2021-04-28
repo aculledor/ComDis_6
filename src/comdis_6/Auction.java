@@ -16,18 +16,18 @@ import java.util.List;
  */
 public class Auction {
     private final String title;
-    private final int price, increment;
+    private int price, round;
+    private final int increment;
     private final long id;
-    private int step;
     private List<AID> lastRoundBuyers, buyers;
     private ACLMessage cfp;
 
     public Auction(long id, String title, int price, int increment) {
         this.id = id;
         this.title = title;
+        this.round = -1;
         this.price = price;
         this.increment = increment;
-        this.step = 0;
         this.lastRoundBuyers = null;
         this.buyers = new ArrayList<>();
         this.cfp = null;
@@ -41,16 +41,20 @@ public class Auction {
         return id;
     }
 
-    public int getPrice() {
+    public int getOriginalPrice() {
         return price;
+    }
+
+    public int getCurrentPrice() {
+        return price + (increment * round);
+    }
+
+    public int getLastRoundPrice() {
+        return price + (increment * (round - 1));
     }
 
     public int getIncrement() {
         return increment;
-    }
-
-    public int getStep() {
-        return step;
     }
 
     public List<AID> getLastRoundBuyers() {
@@ -61,32 +65,46 @@ public class Auction {
         return buyers;
     }
 
-    public Auction setStep(int step) {
-        this.step = step;
-        return this;
-    }
-
     public Auction setBuyers(List<AID> buyers) {
         this.lastRoundBuyers = new ArrayList<>(buyers);
         this.buyers = buyers;
         return this;
     }
 
-    public ACLMessage getCfp() {
+    public ACLMessage getCFP() {
         return cfp;
     }
 
-    public Auction setCfp(ACLMessage cfp) {
+    public Auction setCFP(ACLMessage cfp) {
         this.cfp = cfp;
         return this;
     }
     
+    public Auction incrementPrice(){
+        this.price += this.increment;
+        return this;
+    }
     
+    public Auction incrementRound(){
+        this.round += 1;
+        return this;
+    }
     
-
+    public int getRound(){
+        return this.round;
+    }
+    
+    public Auction resetAuction(){
+        this.round = -1;
+        this.lastRoundBuyers = null;
+        this.buyers = new ArrayList<>();
+        this.cfp = null;
+        return this;
+    }
+    
     @Override
     public String toString() {
-        String toret = "Auction\n{" + "id=" + id + "bookTitle=" + title + ", price=" + price + "€, increment=" + increment + "€, step=" + step;
+        String toret = "Auction\n{" + "id=" + id + "bookTitle=" + title + ", price=" + price + "€, increment=" + increment + "€, Round=" + round;
         //lastRoundBuyers
         if(lastRoundBuyers != null && !lastRoundBuyers.isEmpty()){
             toret += "\nlastRoundBuyers {";
