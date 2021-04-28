@@ -29,24 +29,44 @@ import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BookBuyerAgent extends Agent {
     // The title of the book to buy
 
-    private String targetBookTitle;
+    private List<String> targetBooks;
     // The list of known seller agents
     private AID[] sellerAgents;
 
     // Put agent initializations here
+    @Override
     protected void setup() {
+        // Register the book-buying service in the yellow pages
+        DFAgentDescription dfd = new DFAgentDescription();
+        dfd.setName(getAID());
+        ServiceDescription sd = new ServiceDescription();
+        sd.setType("book-buying");
+        sd.setName("JADE-book-trading");
+        dfd.addServices(sd);
+        try {
+            DFService.register(this, dfd);
+        } catch (FIPAException fe) {
+            fe.printStackTrace();
+        }
+        
         // Printout a welcome message
         System.out.println("Hallo! Buyer-agent " + getAID().getName() + " is ready.");
-
+        targetBooks = new ArrayList<>();
+        
         // Get the title of the book to buy as a start-up argument
         Object[] args = getArguments();
         if (args != null && args.length > 0) {
-            targetBookTitle = (String) args[0];
-            System.out.println("Target book is " + targetBookTitle);
+            for (Object arg : args)
+                targetBooks.add((String) arg);
+            System.out.println("Target book are: ");
+            targetBooks.forEach((book)->System.out.print(book+" "));
+            
 
             // Add a TickerBehaviour that schedules a request to seller agents every minute
             addBehaviour(new TickerBehaviour(this, 60000) {
@@ -81,6 +101,7 @@ public class BookBuyerAgent extends Agent {
     }
 
     // Put agent clean-up operations here
+    @Override
     protected void takeDown() {
         // Printout a dismissal message
         System.out.println("Buyer-agent " + getAID().getName() + " terminating.");
@@ -173,6 +194,7 @@ public class BookBuyerAgent extends Agent {
             }
         }
 
+        @Override
         public boolean done() {
             if (step == 2 && bestSeller == null) {
                 System.out.println("Attempt failed: " + targetBookTitle + " not available for sale");
@@ -180,4 +202,11 @@ public class BookBuyerAgent extends Agent {
             return ((step == 2 && bestSeller == null) || step == 4);
         }
     }  // End of inner class RequestPerformer
+    
+    
+    
+    //NEW CLASS THATS A COPY OF THE ORIGINAL NOOKBUYER
+    
+    
+    
 }
