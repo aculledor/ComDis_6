@@ -21,7 +21,6 @@
 package comdis_6;
 
 import jade.core.Agent;
-import jade.core.AID;
 import jade.core.behaviours.*;
 import jade.lang.acl.ACLMessage;
 import jade.lang.acl.MessageTemplate;
@@ -29,14 +28,24 @@ import jade.domain.DFService;
 import jade.domain.FIPAException;
 import jade.domain.FIPAAgentManagement.DFAgentDescription;
 import jade.domain.FIPAAgentManagement.ServiceDescription;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class BookBuyerAgent extends Agent {
+    // Type of the agent
+    private final String agentType = "book-buying";
+    
+    // Type of the offer message
+    private final String offerMessageType = "book-offer";
+    
+    // Type of the trade message
+    private final String tradeMessageType = "book-trade";
+    
     // The title of the book to buy
     private Map<String, Integer> targetBooks;
+    
+    // The GUI by means of which the user can add books in the catalogue
+    private BookBuyerGUI myGui;
 
     // Put agent initializations here
     @Override
@@ -45,7 +54,7 @@ public class BookBuyerAgent extends Agent {
         DFAgentDescription dfd = new DFAgentDescription();
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
-        sd.setType("book-buying");
+        sd.setType(agentType);
         sd.setName("JADE-book-trading-"+System.currentTimeMillis());
         dfd.addServices(sd);
         try {
@@ -53,6 +62,10 @@ public class BookBuyerAgent extends Agent {
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
+
+        // Create and show the GUI 
+        myGui = new BookBuyerGUI(this);
+        myGui.showGui();
         
         // Printout a welcome message
         System.out.println("Hallo! Buyer-agent " + getAID().getName() + " is ready.");
@@ -115,7 +128,7 @@ public class BookBuyerAgent extends Agent {
         public void action() {
             MessageTemplate mt = MessageTemplate.and(
                     MessageTemplate.MatchPerformative(ACLMessage.CFP),
-                    MessageTemplate.MatchConversationId("book-offer"));
+                    MessageTemplate.MatchConversationId(offerMessageType));
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null) {
                 // CFP Message received. Process it
@@ -150,7 +163,7 @@ public class BookBuyerAgent extends Agent {
         public void action() {
             MessageTemplate mt = MessageTemplate.and(
                     MessageTemplate.MatchPerformative(ACLMessage.PROPOSE),
-                    MessageTemplate.MatchConversationId("book-trade"));
+                    MessageTemplate.MatchConversationId(tradeMessageType));
             ACLMessage msg = myAgent.receive(mt);
             if (msg != null) {
                 // PROPOSE Message received. Process it
