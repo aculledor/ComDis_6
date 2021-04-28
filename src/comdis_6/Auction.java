@@ -22,8 +22,8 @@ public class Auction {
     private List<AID> lastRoundBuyers, buyers;
     private ACLMessage cfp;
 
-    public Auction(long id, String title, int price, int increment) {
-        this.id = id;
+    public Auction(String title, int price, int increment) {
+        this.id = System.currentTimeMillis();
         this.title = title;
         this.round = -1;
         this.price = price;
