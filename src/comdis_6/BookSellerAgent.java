@@ -33,11 +33,15 @@ import jade.domain.FIPAAgentManagement.ServiceDescription;
 import java.util.*;
 
 public class BookSellerAgent extends Agent {
-
     // The catalogue of books for sale (maps the title of a book to its object)
-    private ArrayList<Auction> catalogue;
+    private List<Auction> catalogue;
+    
+    // The repository of successful transactions
+    private Map<String, Auction> repository;
+    
     // The GUI by means of which the user can add books in the catalogue
     private BookSellerGui myGui;
+    
     // The template ofr sendind CFP
     DFAgentDescription templateCFP;
     ServiceDescription sdCFP;
@@ -46,8 +50,9 @@ public class BookSellerAgent extends Agent {
     @Override
     protected void setup() {
         //***********************************   INITIAL SETUP   ***********************************
-        // Create the catalogue
+        // Create the catalogue and repository
         catalogue = new ArrayList<>();
+        repository = new HashMap<>();
 
         // Create and show the GUI 
         myGui = new BookSellerGui(this);
@@ -186,13 +191,16 @@ public class BookSellerAgent extends Agent {
         
         public void finishTrade(){
             isDone = true;
+            
             // Purchase order reply received
             if (reply.getPerformative() == ACLMessage.INFORM) {
                 // Purchase successful. We can terminate
                 System.out.println(auction.getTitle() + " successfully purchased from agent " + reply.getSender().getName());
                 System.out.println("Price = " + auction.getLastRoundPrice());
+                repository.put(reply.getInReplyTo(), auction);
                 return;
             }
+            
             // Purchase unsuccessful. We reset the auction and return it to the catalogue
             System.out.println("Attempt failed: buyer no longer interested");
             auction.resetAuction();
@@ -213,7 +221,7 @@ public class BookSellerAgent extends Agent {
             String content = (option.equals("last round")) ? auction.getTitle() + "-" + auction.getLastRoundPrice(): auction.getTitle() + "-" + auction.getCurrentPrice();
             order.setContent(content);
             order.setConversationId("book-trade");
-            order.setReplyWith("order-" + auction.getId());
+            order.setReplyWith("order-" + System.currentTimeMillis());
             
             // Send the purchase order to the seller that provided the best offer
             myAgent.send(order);
@@ -247,8 +255,10 @@ public class BookSellerAgent extends Agent {
         } catch (FIPAException fe) {
             fe.printStackTrace();
         }
+        
         // Close the GUI
         myGui.dispose();
+        
         // Printout a dismissal message
         System.out.println("Seller-agent " + getAID().getName() + " terminating.");
     }
