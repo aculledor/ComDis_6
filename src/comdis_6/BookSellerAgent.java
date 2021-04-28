@@ -69,7 +69,7 @@ public class BookSellerAgent extends Agent {
         dfd.setName(getAID());
         ServiceDescription sd = new ServiceDescription();
         sd.setType("book-selling");
-        sd.setName("JADE-book-trading");
+        sd.setName("JADE-book-seller");
         dfd.addServices(sd);
         try {
             DFService.register(this, dfd);
@@ -126,7 +126,7 @@ public class BookSellerAgent extends Agent {
                         //We save the proposals
                         while (reply != null) {
                             // Reply received, we add the sender to the buyers list
-                            if (reply.getPerformative() == ACLMessage.PROPOSE)
+                            if (reply.getPerformative() == ACLMessage.ACCEPT_PROPOSAL && !auction.getBuyers().contains(reply.getSender()))
                                 auction.getBuyers().add(reply.getSender());
                             reply = myAgent.receive(mt);
                         }
@@ -193,7 +193,7 @@ public class BookSellerAgent extends Agent {
             isDone = true;
             
             // Purchase order reply received
-            if (reply.getPerformative() == ACLMessage.INFORM) {
+            if (reply.getPerformative() == ACLMessage.AGREE) {
                 // Purchase successful. We can terminate
                 System.out.println(auction.getTitle() + " successfully purchased from agent " + reply.getSender().getName());
                 System.out.println("Price = " + auction.getLastRoundPrice());
@@ -215,12 +215,12 @@ public class BookSellerAgent extends Agent {
                 return;
             
             // Set the purchase order
-            ACLMessage order = new ACLMessage(ACLMessage.ACCEPT_PROPOSAL);
+            ACLMessage order = new ACLMessage(ACLMessage.PROPOSE);
+            order.setConversationId("book-trade");
             AID seller = (option.equals("last round")) ? auction.getLastRoundBuyers().get(0) : auction.getBuyers().get(0);
             order.addReceiver(seller);
             String content = (option.equals("last round")) ? auction.getTitle() + "-" + auction.getLastRoundPrice(): auction.getTitle() + "-" + auction.getCurrentPrice();
             order.setContent(content);
-            order.setConversationId("book-trade");
             order.setReplyWith("order-" + System.currentTimeMillis());
             
             // Send the purchase order to the seller that provided the best offer
