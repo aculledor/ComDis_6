@@ -16,12 +16,13 @@ import java.util.List;
  */
 public class Auction {
     private final String title;
-    private final int id, price, increment;
+    private final int price, increment;
+    private final long id;
     private int step;
     private List<AID> lastRoundBuyers, buyers;
     private ACLMessage cfp;
 
-    public Auction(int id, String title, int price, int increment) {
+    public Auction(long id, String title, int price, int increment) {
         this.id = id;
         this.title = title;
         this.price = price;
@@ -36,7 +37,7 @@ public class Auction {
         return title;
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
@@ -108,7 +109,7 @@ public class Auction {
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 13 * hash + this.id;
+        hash = 41 * hash + (int) (this.id ^ (this.id >>> 32));
         return hash;
     }
 
@@ -129,4 +130,6 @@ public class Auction {
         }
         return true;
     }
+
+    
 }
