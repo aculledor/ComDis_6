@@ -187,13 +187,12 @@ public class BookSellerAgent extends Agent {
         }
         
         public void finishTrade(){
+            // Purchase order reply received
             isDone = true;
             
-            // Purchase order reply received
+            // Purchase successful. We can terminate
             if (reply.getPerformative() == ACLMessage.AGREE) {
-                // Purchase successful. We can terminate
-                System.out.println(auction.getTitle() + " successfully purchased from agent " + reply.getSender().getName());
-                System.out.println("Price = " + auction.getLastRoundPrice());
+                System.out.println(auction.getTitle() + " successfully purchased from agent " + reply.getSender().getName() + " for " + auction.getLastRoundPrice() + "€");
                 repository.put(reply.getInReplyTo(), auction);
                 return;
             }
