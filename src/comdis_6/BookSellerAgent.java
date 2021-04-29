@@ -118,6 +118,7 @@ public class BookSellerAgent extends Agent {
                     MessageTemplate mt = MessageTemplate.and(
                             MessageTemplate.MatchConversationId(offerMessageType),
                             MessageTemplate.MatchInReplyTo(auction.getCFP().getReplyWith()));
+                    
                     // Receive all proposals/refusals from buyer agents
                     ACLMessage reply = myAgent.receive(mt);
 
@@ -147,6 +148,7 @@ public class BookSellerAgent extends Agent {
                     if (auction.getBuyers().size() == 1) {
                         // We remove the auction from the list
                         auctionIt.remove();
+                        
                         // Add the behaviour starting the trade 
                         addBehaviour(new TradeController(auction, "this round"));
                         continue;
@@ -158,21 +160,7 @@ public class BookSellerAgent extends Agent {
                     // Increment round and set new CFP
                     auction.incrementRound();
                     auction.resetCFP();
-                    System.out.println("New auction round for " + auction.getTitle() + " : " + auction.getId() + " for " + auction.getCurrentPrice() + "€");
-
-                    // Update the list of CFP receivers
-                    try {
-                        //Get them all
-                        DFAgentDescription[] result = DFService.search(myAgent, templateCFP);
-                        System.out.println("Found the following book-buying agents:");
-                        for (int i = 0; i < result.length; ++i) {
-                            auction.getCFP().addReceiver(result[i].getName());
-                            System.out.println(" "+auction.getBuyers().get(i).getName());
-                        }
-                        myAgent.send(auction.getCFP());
-                    } catch (FIPAException fe) {
-                        fe.printStackTrace();
-                    }
+                    System.out.println("New auction round "+auction.getRound()+" for " + auction.getTitle() + " : " + auction.getId() + " for " + auction.getCurrentPrice() + "€");
                 }
             }
         });
