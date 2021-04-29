@@ -121,19 +121,15 @@ public class BookSellerAgent extends Agent {
                     // Receive all proposals/refusals from buyer agents
                     ACLMessage reply = myAgent.receive(mt);
 
-                    // if there is no proposals the Auction ends and the first buyer from the previous round wins 
+                    // if there is no proposals the Auction ends and the first buyer from the previous round wins unless it's round 0
                     if (reply == null) {
                         // If it's the first round, it means no one saw or wanted our offer, we dont go to the next round
                         if (auction.getRound() == 0)
                             continue;
-                        // If lastRoundBuyers is empty, and there were no replies, we reset the auction
-                        if(auction.getLastRoundBuyers().isEmpty()){
-                            auction.resetAuction();
-                            continue;
-                        }
-                        // If lastRoundBuyers is not empty we initiate a trade offer
+
                         // We remove the auction from the list
                         auctionIt.remove();
+                        
                         // Add the behaviour starting the trade 
                         addBehaviour(new TradeController(auction, "last round"));
                         continue;
