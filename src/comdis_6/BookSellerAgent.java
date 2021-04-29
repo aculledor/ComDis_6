@@ -112,7 +112,7 @@ public class BookSellerAgent extends Agent {
                     
                     //***********************************   END OF ROUND BEHAVIOUR   ***********************************
                     //We clear this round's buyers and it gets saved in lastRoundBuyers array
-                    auction.setBuyers(new ArrayList<>());
+                    auction.pushBuyersList();
 
                     // Prepare the template to get proposals
                     MessageTemplate mt = MessageTemplate.and(

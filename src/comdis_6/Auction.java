@@ -68,9 +68,13 @@ public class Auction {
         return buyers;
     }
 
-    public Auction setBuyers(List<AID> buyers) {
-        this.lastRoundBuyers = new ArrayList<>(buyers);
-        this.buyers = buyers;
+    /**
+     * Copies the current list to lastRoundBuyers list and creates a new one
+     * @return the auction
+     */
+    public Auction pushBuyersList() {
+        lastRoundBuyers = new ArrayList<>(buyers);
+        buyers = new ArrayList<>();
         return this;
     }
 
@@ -84,24 +88,24 @@ public class Auction {
     }
     
     public Auction incrementPrice(){
-        this.price += this.increment;
+        price += increment;
         return this;
     }
     
     public Auction incrementRound(){
-        this.round += 1;
+        round += 1;
         return this;
     }
     
     public int getRound(){
-        return this.round;
+        return round;
     }
     
     public Auction resetCFP(){
-        this.cfp = new ACLMessage(ACLMessage.CFP);
-        this.cfp.setContent(this.title + "-" + this.getCurrentPrice());
-        this.cfp.setConversationId("book-offer");
-        this.cfp.setReplyWith("cfp-" + this.id + "-" + this.round); // Unique value
+        cfp = new ACLMessage(ACLMessage.CFP);
+        cfp.setContent(title + "-" + getCurrentPrice());
+        cfp.setConversationId("book-offer");
+        cfp.setReplyWith("cfp-" + id + "-" + round); // Unique value
         return this;
     }
     
@@ -115,7 +119,7 @@ public class Auction {
     
     @Override
     public String toString() {
-        String toret = "Auction\n{" + "id=" + id + "bookTitle=" + title + ", price=" + price + "€, increment=" + increment + "€, Round=" + round;
+        String toret = "Auction\n{" + "id=" + id + ", bookTitle=" + title + ", price=" + price + "€, increment=" + increment + "€, Round=" + round;
         //lastRoundBuyers
         if(lastRoundBuyers != null && !lastRoundBuyers.isEmpty()){
             toret += "\nlastRoundBuyers {";
@@ -154,10 +158,7 @@ public class Auction {
             return false;
         }
         final Auction other = (Auction) obj;
-        if (this.id != other.id) {
-            return false;
-        }
-        return true;
+        return this.id == other.id;
     }
 
     
