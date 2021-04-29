@@ -112,7 +112,7 @@ public class BookBuyerAgent extends Agent {
     }
     
     public Integer getPrice(ACLMessage message){
-        return Integer.getInteger(message.getContent().split("-")[1]);
+        return Integer.parseInt(message.getContent().split("-")[1]);
     }
     
 
@@ -137,8 +137,7 @@ public class BookBuyerAgent extends Agent {
                 ACLMessage reply = msg.createReply();
                 
                 // We want the book proposed. Set response to propose
-                if (title != null && price != null && 
-                        targetBooks.keySet().contains(title) && targetBooks.get(title) <= price)
+                if (title != null && price != null && targetBooks.keySet().contains(title) && targetBooks.get(title) >= price)
                     reply.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
                 // We dont want the book. Set response to refuse
                 else
@@ -173,7 +172,7 @@ public class BookBuyerAgent extends Agent {
                 
                 // We accept the transaction. Set response to AGREE
                 if (title != null && price != null && 
-                        targetBooks.keySet().contains(title) && targetBooks.get(title) <= price) {
+                        targetBooks.keySet().contains(title) && targetBooks.get(title) >= price) {
                     reply.setPerformative(ACLMessage.AGREE);
                     System.out.println("Accepted to buy " +title + " for " + price + "€ from " + msg.getSender().getName());
                 } 
